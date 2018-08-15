@@ -1,61 +1,81 @@
 //- index page
 if is_home()
-  h4.page-title Recent Articles
+  h4.page-title 最新发布
   each post in site.posts.sort('date', 'desc').toArray()
-    - var reading_length = Math.ceil(post.content.replace(/[^a-zA-Z\s]/g, '').split(/[\s]+/).length / 250)
-    a.article(href= config.root + post.path)
-      article.item(itemscope, itemprop='blogPost', itemtype='https://schema.org/BlogPosting')
-        h2(itemprop='headline')= post.title
-        span.post-meta
-          | Published on
-          time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' dddd, MMMM Do YYYY') + ' at ' + full_date(new Date(post.date), 'H:mm')
-          | , #{reading_length} min read
-        p(itemprop='text').post-excerpt= post.intro ? post.intro : post.content.replace(/<(?:.|\n)*?>/gm, '').substr(0, 220)
+    if !post.hide 
+      - var reading_length = Math.ceil(post.content.replace(/[^a-zA-Z\s]/g, '').split(/[\s]+/).length / 250)
+      a.article(href= config.root + post.path)
+        article.item(itemscope, itemprop='blogPost', itemtype='https://schema.org/BlogPosting')
+          h2(itemprop='headline')= post.title
+          span.post-meta
+            | 发表于 
+            time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), 'YYYY年MM月D日 dddd') + ' ' + full_date(new Date(post.date), 'HH时mm分')
+            //- | , #{reading_length}分钟前阅读过
+          p(itemprop='text').post-excerpt= post.intro ? post.intro : post.content.replace(/<(?:.|\n)*?>/gm, '').substr(0, 220)
   footer(itemscope, itemtype='https://schema.org/WPFooter')
     include _footer
 //- articles page
-if is_page() && page.title.toLowerCase() == 'articles'
+if is_page() && page.type == 'articles'
   article.full
     h1(itemprop='headline')= page.title
     != page.content
     - var lastyear = 0
     for post, index in site.posts.sort('date', 'desc').toArray()
-      if lastyear != post.date.format('YYYY')
-        if index != 0
-          | </ul>
-        - lastyear = post.date.format('YYYY')
-        h4= lastyear
-        | <ul>
-        li(itemprop='name')
-          a(href= config.root + post.path, itemprop='url') #{post.title}
-          |  &mdash;
-          time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' MMMM Do')
-      else
-        li
-          a(href= config.root + post.path) #{post.title}
-          |  &mdash;
-          time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' MMMM Do')
+      if !post.hide
+        if lastyear != post.date.format('YYYY')
+          if index != 0
+            | </ul>
+          - lastyear = post.date.format('YYYY')
+          h4= lastyear
+          | <ul>
+          li(itemprop='name')
+            a(href= config.root + post.path, itemprop='url') #{post.title}
+            |  &mdash;
+            time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' MM月D日')
+        else
+          li
+            a(href= config.root + post.path) #{post.title}
+            |  &mdash;
+            time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' MM月D日')
     if site.posts.toArray().length != 0
       | </ul>
   include _comments
-else if is_page()
+else if is_page() && page.type == 'tags'
+  article.full
+    h1(itemprop='headline')= page.title
+    each tag , _ in site.tags.data
+      - var iname = 0
+      for post, index in site.posts.sort('date', 'desc').toArray()
+        if !post.hide && post.tags.length > 0 && tag.name == post.tag
+          if iname != tag.name
+            h4 #{tag.name}
+            | <ul>
+            - iname = tag.name
+          li
+          a(href= config.root + post.path) #{post.title} 
+          |  &mdash;
+          time(itemprop='datePublished', datetime= post.date.toISOString())= full_date(new Date(post.date), ' YYYY年MM月D日')
+      | </ul>
+
+  include _comments
+else if is_page() 
   article.full
     h1(itemprop='headline')= page.title
     if page.updated
       span.post-meta
-        | Last updated on
-        time(itemprop='dateModified', datetime= page.date.toISOString())= full_date(new Date(page.updated), ' dddd, MMMM Do YYYY') + ' at ' + full_date(new Date(page.updated), 'H:mm')
+        | 更新于 
+        time(itemprop='dateModified', datetime= page.date.toISOString())= full_date(new Date(page.updated), 'YYYY年MM月D日 dddd') + ' ' + full_date(new Date(page.updated), 'H时mm分')
     != page.content
   include _comments
 else if is_post()
   article.full
     h1(itemprop='headline')= page.title
     span.post-meta
-      | Published on
-      time(itemprop='datePublished', datetime= page.date.toISOString())= full_date(new Date(page.date), ' dddd, MMMM Do YYYY') + ' at ' + full_date(new Date(page.date), 'H:mm')
-      if page.updated
+      | 发表于 
+      time(itemprop='datePublished', datetime= page.date.toISOString())= full_date(new Date(page.date), 'YYYY年MM月D日 dddd') + ' ' + full_date(new Date(page.date), 'H时mm分')
+      if page.updated && page.date.toISOString() != page.updated.toISOString()
         br
-        | Last updated on
-        time(itemprop='dateModified', datetime= page.date.toISOString())= full_date(new Date(page.updated), ' dddd, MMMM Do YYYY') + ' at ' + full_date(new Date(page.updated), 'H:mm')
+        | 更新于 
+        time(itemprop='dateModified', datetime= page.date.toISOString())= full_date(new Date(page.updated), 'YYYY年MM月D日 dddd') + ' ' + full_date(new Date(page.updated), 'H时mm分')
     != page.content
   include _comments
